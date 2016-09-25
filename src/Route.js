@@ -3,6 +3,7 @@ import {Context} from "fluxtuate"
 import {RouterEvents} from "fluxtuate-router"
 import RoutePart from "fluxtuate-router/lib/route-part"
 import {autobind} from "core-decorators"
+import utils from "./utils"
 
 @autobind
 export default class Route extends Component {
@@ -84,6 +85,10 @@ export default class Route extends Component {
         }
     }
 
+    get currentRoute() {
+        return this.state.currentRoute;
+    }
+
     componentWillReceiveProps(newProps) {
         if(this.props.location !== newProps.location) {
             if(this.context.fluxtuateContext && this.props.location){
@@ -119,33 +124,9 @@ export default class Route extends Component {
     updateMatches(matches, misses, currentRoute) {
         let hasMatch = false;
         matches.forEach((match)=>{
-            let isMatch = true;
-            let matchProps = Object.assign({}, match.props);
-            let page = matchProps.page;
-            let path = matchProps.path;
-            if(page){
-                isMatch = page === currentRoute.page;
-            }
+            let {page, path, params} = match.props;
 
-            if(path) {
-                isMatch = path === currentRoute.path;
-            }
-
-            if(isMatch) {
-                matchProps["page"] = undefined;
-                matchProps["path"] = undefined;
-                matchProps["component"] = undefined;
-                matchProps["children"] = undefined;
-
-                Object.keys(matchProps).forEach((param)=> {
-                    if (matchProps[param] !== undefined && matchProps[param] !== currentRoute.params[param]) {
-                        isMatch = false;
-                    }
-                });
-            }
-
-
-            if(isMatch) {
+            if(utils.isMatch(page, path, params, currentRoute)) {
                 hasMatch = true;
                 match.show();
             }else{

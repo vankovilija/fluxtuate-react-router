@@ -4,8 +4,16 @@ import {autobind} from "core-decorators"
 
 @autobind
 export default class Match extends Component {
+    static propTypes = {
+        component: PropTypes.string,
+        params: PropTypes.object,
+        page: PropTypes.string,
+        path: PropTypes.string
+    };
+
     static defaultProps = {
-        component: "div"
+        component: "div",
+        params: {}
     };
 
     static contextTypes = {
