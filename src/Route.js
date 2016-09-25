@@ -9,32 +9,28 @@ export default class Route extends Component {
     state = {
         matches: [],
         misses: [],
-        currentRoute: {}
+        currentRoute: undefined
     };
 
     routeListener;
 
     static propTypes = {
-        location: PropTypes.instanceOf(RoutePart).isRequired
+        location: PropTypes.instanceOf(RoutePart)
     };
 
     static defaultProps = {
-        component: "div"
+        component: "div",
+        location: undefined
     };
 
     static contextTypes = {
         fluxtuateContext: PropTypes.instanceOf(Context)
     };
 
-    static childContextTypes = {
-        route: PropTypes.instanceOf(Route),
-        fluxtuateContext: PropTypes.instanceOf(Context)
-    };
-
     getChildContext() {
         return {
             route: this,
-            fluxtuateContext: this.props.location.endingContext
+            fluxtuateContext: this.props.location? this.props.location.endingContext : undefined
         };
     }
 
@@ -83,15 +79,14 @@ export default class Route extends Component {
     }
 
     componentWillMount() {
-        if(this.context.fluxtuateContext){
-            this.context.fluxtuateContext.addChild(this.props.location.startingContext);
+        if(this.props.location) {
+            this.componentWillReceiveProps(this.props);
         }
-        this.routeListener = this.props.location.addEventListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
     }
 
     componentWillReceiveProps(newProps) {
         if(this.props.location !== newProps.location) {
-            if(this.context.fluxtuateContext){
+            if(this.context.fluxtuateContext && this.props.location){
                 this.context.fluxtuateContext.removeChild(this.props.location.startingContext);
             }
             if(this.routeListener) {
@@ -103,7 +98,11 @@ export default class Route extends Component {
                 this.context.fluxtuateContext.addChild(newProps.location.startingContext);
             }
 
-            this.routeListener = newProps.location.addEventListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
+            this.routeListener = newProps.location.addListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
+
+            this.setState({
+                currentRoute: newProps.location.currentRoute
+            });
         }
     }
 
@@ -133,11 +132,13 @@ export default class Route extends Component {
             }
 
             if(isMatch) {
-                delete matchProps["page"];
-                delete matchProps["path"];
+                matchProps["page"] = undefined;
+                matchProps["path"] = undefined;
+                matchProps["component"] = undefined;
+                matchProps["children"] = undefined;
 
                 Object.keys(matchProps).forEach((param)=> {
-                    if (matchProps[param] !== currentRoute.params[param]) {
+                    if (matchProps[param] !== undefined && matchProps[param] !== currentRoute.params[param]) {
                         isMatch = false;
                     }
                 });
@@ -157,32 +158,37 @@ export default class Route extends Component {
         });
     }
 
-    componentDidMount() {
-        let {matches, misses, currentRoute} = this.state;
-        this.updateMatches(matches, misses, currentRoute);
+    redirect(pageName, path, params) {
+        if(pageName) {
+            this.props.location.goToPage(pageName, params);
+        }else if(path){
+            this.props.location.goToPath(path, params);
+        }else{
+            throw new Error("You must specify a page or a path when redirecting to a different URL!");
+        }
     }
 
     componentDidUpdate() {
         let {matches, misses, currentRoute} = this.state;
-        this.updateMatches(matches, misses, currentRoute);
+        if(currentRoute)
+            this.updateMatches(matches, misses, currentRoute);
     }
 
     getChildren(children, childProps) {
-        return React.Children.map(children, (child)=>React.cloneElement(child, Object.assign({}, child.props, childProps)));
+        return React.Children.map(children, (child)=>child?React.cloneElement(child, Object.assign({}, child.props, childProps)):undefined);
     }
 
     render() {
-        let {component} = this.props;
-        let {currentRoute} = this.state;
+        let {component, children} = this.props;
 
-        let childProps = Object.assign({}, {route: currentRoute}, this.props);
+        if(!this.props.location) return React.createElement(component);
 
-        childProps.location = undefined;
-        childProps.component = undefined;
-
-        let children = this.getChildren(this.props.children, childProps);
-
-        return React.createElement(component, childProps, children);
+        return React.createElement(component, {}, children);
     }
 
 }
+
+Route.childContextTypes = {
+    route: PropTypes.instanceOf(Route),
+    fluxtuateContext: PropTypes.instanceOf(Context)
+};

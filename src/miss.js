@@ -4,6 +4,10 @@ import {autobind} from "core-decorators"
 
 @autobind
 export default class Miss extends Match {
+    static defaultProps = Match.defaultProps;
+
+    static contextTypes = Match.contextTypes;
+
     throwParentError() {
         throw new Error("Misses must be placed inside a route object!");
     }

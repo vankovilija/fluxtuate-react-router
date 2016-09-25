@@ -1,4 +1,4 @@
-import React, {Component} from "react"
+import React, {Component, PropTypes} from "react"
 import Route from "./route"
 import {autobind} from "core-decorators"
 
@@ -57,12 +57,9 @@ export default class Match extends Component {
     }
 
     render() {
-        let {component} = this.props;
+        if(!this.state.visible) return null;
 
-        let children;
-        if(this.state.visible) {
-            children = this.props.children;
-        }
+        let {component, children} = this.props;
 
         return React.createElement(component, {}, children);
     }
