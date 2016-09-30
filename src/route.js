@@ -9,6 +9,7 @@ import utils from "./utils"
 export default class Route extends Component {
     state = {
         matches: [],
+        parts: [],
         misses: [],
         currentRoute: undefined
     };
@@ -16,11 +17,13 @@ export default class Route extends Component {
     routeListener;
 
     static propTypes = {
-        location: PropTypes.instanceOf(RoutePart)
+        location: PropTypes.instanceOf(RoutePart),
+        visible: PropTypes.bool
     };
 
     static defaultProps = {
         component: "div",
+        visible: true,
         location: undefined
     };
 
@@ -33,6 +36,14 @@ export default class Route extends Component {
             route: this,
             fluxtuateContext: this.props.location? this.props.location.endingContext : undefined
         };
+    }
+
+    addPart(part) {
+        let {parts} = this.state;
+        parts.push(part);
+        this.setState({
+            parts
+        });
     }
 
     addMatch(match) {
@@ -49,6 +60,17 @@ export default class Route extends Component {
         this.setState({
             misses
         })
+    }
+
+    removePart(part) {
+        let {parts} = this.state;
+        let index = parts.indexOf(part);
+        if(index !== -1) {
+            parts.splice(index, 1);
+            this.setState({
+                parts
+            });
+        }
     }
 
     removeMatch(match) {
@@ -74,9 +96,13 @@ export default class Route extends Component {
     }
 
     updateRoute() {
+        let currentRoute = this.props.location.currentRoute;
         this.setState({
-            currentRoute: this.props.location.currentRoute
+            currentRoute
         });
+        this.state.parts.forEach((part)=>{
+            part.setParams(currentRoute.params);
+        })
     }
 
     componentWillMount() {
@@ -100,6 +126,7 @@ export default class Route extends Component {
             }
 
             if(this.context.fluxtuateContext){
+                newProps.location.startingContext.start();
                 this.context.fluxtuateContext.addChild(newProps.location.startingContext);
             }
 
@@ -121,16 +148,23 @@ export default class Route extends Component {
         }
     }
 
+    updateMatch(match, currentRoute) {
+        let {page, path, params} = match.props;
+
+        if(utils.isMatch(page, path, params, currentRoute)) {
+            match.show();
+            return true;
+        }else{
+            match.hide();
+            return false;
+        }
+    }
+
     updateMatches(matches, misses, currentRoute) {
         let hasMatch = false;
         matches.forEach((match)=>{
-            let {page, path, params} = match.props;
-
-            if(utils.isMatch(page, path, params, currentRoute)) {
+            if(this.updateMatch(match, currentRoute)){
                 hasMatch = true;
-                match.show();
-            }else{
-                match.hide();
             }
         });
 
@@ -150,9 +184,9 @@ export default class Route extends Component {
     }
 
     componentDidUpdate() {
-        let {matches, misses, currentRoute} = this.state;
-        if(currentRoute)
-            this.updateMatches(matches, misses, currentRoute);
+        let {matches, misses} = this.state;
+        if(this.props.location && this.props.location.currentRoute)
+            this.updateMatches(matches, misses, this.props.location.currentRoute);
     }
 
     getChildren(children, childProps) {
@@ -164,7 +198,11 @@ export default class Route extends Component {
 
         if(!this.props.location) return React.createElement(component);
 
-        return React.createElement(component, {}, children);
+        let style = {};
+
+        if(!this.props.visible) style.display = "none"
+
+        return React.createElement(component, {style: style}, children);
     }
 
 }
