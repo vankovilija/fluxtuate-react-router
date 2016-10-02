@@ -11,6 +11,7 @@ export default class Route extends Component {
         matches: [],
         parts: [],
         misses: [],
+        providers: [],
         currentRoute: undefined
     };
 
@@ -38,6 +39,14 @@ export default class Route extends Component {
         };
     }
 
+    addLocationProvider(locationProvider){
+        let {providers} = this.state;
+        providers.push(locationProvider);
+        this.setState({
+            providers
+        });
+    }
+
     addPart(part) {
         let {parts} = this.state;
         parts.push(part);
@@ -60,6 +69,17 @@ export default class Route extends Component {
         this.setState({
             misses
         })
+    }
+
+    removeLocationProvider(locationProvider) {
+        let {providers} = this.state;
+        let index = providers.indexOf(locationProvider);
+        if(index !== -1) {
+            providers.splice(index, 1);
+            this.setState({
+                providers
+            });
+        }
     }
 
     removePart(part) {
@@ -183,10 +203,20 @@ export default class Route extends Component {
         }
     }
 
+    updateProviders(providers, locationName, currentRoute) {
+        providers.forEach((provider)=>{
+            provider.setLocation(locationName, currentRoute);
+        })
+    }
+
     componentDidUpdate() {
-        let {matches, misses} = this.state;
-        if(this.props.location && this.props.location.currentRoute)
-            this.updateMatches(matches, misses, this.props.location.currentRoute);
+        let {matches, misses, providers} = this.state;
+        let {location} = this.props;
+        let currentRoute;
+        if(location && (currentRoute = location.currentRoute)) {
+            this.updateMatches(matches, misses, currentRoute);
+            this.updateProviders(providers, location.partName, currentRoute);
+        }
     }
 
     getChildren(children, childProps) {
@@ -200,7 +230,7 @@ export default class Route extends Component {
 
         let style = {};
 
-        if(!this.props.visible) style.display = "none"
+        if(!this.props.visible) style.display = "none";
 
         return React.createElement(component, {style: style}, children);
     }
