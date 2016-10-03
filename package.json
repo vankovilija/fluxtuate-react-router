@@ -61,8 +61,8 @@
     "babel-polyfill": "6.9.1",
     "bluebird": "3.4.1",
     "core-decorators": "0.12.3",
-    "fluxtuate": "/Users/ilijavankov/fluxtuate-js/fluxtuate/fluxtuate-0.0.86.tgz",
-    "fluxtuate-router": "/Users/ilijavankov/fluxtuate-js/fluxtuate-router/fluxtuate-router-0.0.44.tgz",
+    "fluxtuate": "^0.0.90",
+    "fluxtuate-router": "^0.0.50",
     "lodash": "^4.13.1",
     "react": "^15.3.2"
   },
