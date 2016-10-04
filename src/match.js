@@ -69,6 +69,6 @@ export default class Match extends Component {
 
         let {component, children} = this.props;
 
-        return React.createElement(component, {}, children);
+        return React.createElement(component, {style: this.props.style}, children);
     }
 }

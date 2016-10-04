@@ -228,7 +228,7 @@ export default class Route extends Component {
 
         if(!this.props.location) return React.createElement(component);
 
-        let style = {};
+        let style = Object.assign({}, this.props.style);
 
         if(!this.props.visible) style.display = "none";
 
