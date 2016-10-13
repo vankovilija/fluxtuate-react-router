@@ -5,6 +5,31 @@ import RoutePart from "fluxtuate-router/lib/route-part"
 import {autobind} from "core-decorators"
 import utils from "./utils"
 
+import {isString, isNumber} from "lodash/lang"
+
+function compare(keys, params, nextParams) {
+    return keys.reduce((shouldUpdate, currentKey)=> {
+        if (shouldUpdate) return true;
+        let param = params[currentKey];
+        if (currentKey === "params") {
+            return compare(Object.keys(param), param, nextParams[currentKey]);
+        }
+        if (!isString(param) && !isNumber(param)) return shouldUpdate;
+        shouldUpdate = param !== nextParams[currentKey];
+        return shouldUpdate;
+    }, false);
+}
+
+function comapreLists(list1, list2) {
+    if(list1.length !== list2.length) return true;
+
+    return list1.reduce((shouldUpdate, listItem, i)=>{
+        if(shouldUpdate) return true;
+
+        return listItem != list2[i];
+    }, false);
+}
+
 @autobind
 export default class Route extends Component {
     state = {
@@ -16,6 +41,7 @@ export default class Route extends Component {
     };
 
     routeListener;
+    location;
 
     static propTypes = {
         location: PropTypes.instanceOf(RoutePart),
@@ -35,11 +61,11 @@ export default class Route extends Component {
     getChildContext() {
         return {
             route: this,
-            fluxtuateContext: this.props.location? this.props.location.endingContext : undefined
+            fluxtuateContext: this.props.location ? this.props.location.endingContext : undefined
         };
     }
 
-    addLocationProvider(locationProvider){
+    addLocationProvider(locationProvider) {
         let {providers} = this.state;
         providers.push(locationProvider);
         this.setState({
@@ -74,7 +100,7 @@ export default class Route extends Component {
     removeLocationProvider(locationProvider) {
         let {providers} = this.state;
         let index = providers.indexOf(locationProvider);
-        if(index !== -1) {
+        if (index !== -1) {
             providers.splice(index, 1);
             this.setState({
                 providers
@@ -85,7 +111,7 @@ export default class Route extends Component {
     removePart(part) {
         let {parts} = this.state;
         let index = parts.indexOf(part);
-        if(index !== -1) {
+        if (index !== -1) {
             parts.splice(index, 1);
             this.setState({
                 parts
@@ -96,7 +122,7 @@ export default class Route extends Component {
     removeMatch(match) {
         let {matches} = this.state;
         let index = matches.indexOf(match);
-        if(index !== -1) {
+        if (index !== -1) {
             matches.splice(index, 1);
             this.setState({
                 matches
@@ -107,7 +133,7 @@ export default class Route extends Component {
     removeMiss(miss) {
         let {misses} = this.state;
         let index = misses.indexOf(miss);
-        if(index !== -1) {
+        if (index !== -1) {
             misses.splice(index, 1);
             this.setState({
                 misses
@@ -120,13 +146,13 @@ export default class Route extends Component {
         this.setState({
             currentRoute
         });
-        this.state.parts.forEach((part)=>{
+        this.state.parts.forEach((part)=> {
             part.setParams(currentRoute.params);
-        })
+        });
     }
 
     componentWillMount() {
-        if(this.props.location) {
+        if (this.props.location) {
             this.componentWillReceiveProps(this.props);
         }
     }
@@ -136,21 +162,23 @@ export default class Route extends Component {
     }
 
     componentWillReceiveProps(newProps) {
-        if(this.props.location !== newProps.location) {
-            if(this.context.fluxtuateContext && this.props.location){
-                this.context.fluxtuateContext.removeChild(this.props.location.startingContext);
+        if (this.location !== newProps.location) {
+            if (this.context.fluxtuateContext && this.location) {
+                this.context.fluxtuateContext.removeChild(this.location.startingContext);
             }
-            if(this.routeListener) {
+            if (this.routeListener) {
                 this.routeListener.remove();
                 this.routeListener = null;
             }
 
-            if(this.context.fluxtuateContext){
-                newProps.location.startingContext.start();
+            if (this.context.fluxtuateContext) {
+                newProps.location.endingContext.start();
                 this.context.fluxtuateContext.addChild(newProps.location.startingContext);
             }
 
             this.routeListener = newProps.location.addListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
+
+            this.location = newProps.location;
 
             this.setState({
                 currentRoute: newProps.location.currentRoute
@@ -159,8 +187,8 @@ export default class Route extends Component {
     }
 
     componentWillUnmount() {
-        if(this.routeListener) {
-            if(this.context.fluxtuateContext){
+        if (this.routeListener) {
+            if (this.context.fluxtuateContext && !this.context.fluxtuateContext.destroyed) {
                 this.context.fluxtuateContext.removeChild(this.props.location.startingContext);
             }
             this.routeListener.remove();
@@ -171,10 +199,10 @@ export default class Route extends Component {
     updateMatch(match, currentRoute) {
         let {page, path, params} = match.props;
 
-        if(utils.isMatch(page, path, params, currentRoute)) {
+        if (utils.isMatch(page, path, params, currentRoute)) {
             match.show();
             return true;
-        }else{
+        } else {
             match.hide();
             return false;
         }
@@ -182,55 +210,85 @@ export default class Route extends Component {
 
     updateMatches(matches, misses, currentRoute) {
         let hasMatch = false;
-        matches.forEach((match)=>{
-            if(this.updateMatch(match, currentRoute)){
+        matches.forEach((match)=> {
+            if (this.updateMatch(match, currentRoute)) {
                 hasMatch = true;
             }
         });
 
-        misses.forEach((miss)=>{
+        misses.forEach((miss)=> {
             hasMatch ? miss.hide() : miss.show();
         });
     }
 
     redirect(pageName, path, params) {
-        if(pageName) {
+        if (pageName) {
             this.props.location.goToPage(pageName, params);
-        }else if(path){
+        } else if (path) {
             this.props.location.goToPath(path, params);
-        }else{
+        } else {
             throw new Error("You must specify a page or a path when redirecting to a different URL!");
         }
     }
 
     updateProviders(providers, locationName, currentRoute) {
-        providers.forEach((provider)=>{
+        providers.forEach((provider)=> {
             provider.setLocation(locationName, currentRoute);
         })
+    }
+
+    componentDidMount() {
+        this.componentDidUpdate();
     }
 
     componentDidUpdate() {
         let {matches, misses, providers} = this.state;
         let {location} = this.props;
         let currentRoute;
-        if(location && (currentRoute = location.currentRoute)) {
+        if (location && (currentRoute = location.currentRoute)) {
             this.updateMatches(matches, misses, currentRoute);
             this.updateProviders(providers, location.partName, currentRoute);
         }
     }
 
     getChildren(children, childProps) {
-        return React.Children.map(children, (child)=>child?React.cloneElement(child, Object.assign({}, child.props, childProps)):undefined);
+        return React.Children.map(children, (child)=>child ? React.cloneElement(child, Object.assign({}, child.props, childProps)) : undefined);
+    }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        if (this.props.location !== nextProps.location ||
+            this.props.visible !== nextProps.visible ||
+            this.props.component !== nextProps.component) {
+            return true;
+        }
+
+        if(comapreLists(this.state.matches, nextState.matches) ||
+            comapreLists(this.state.misses, nextState.misses) ||
+            comapreLists(this.state.providers, nextState.providers) ||
+            comapreLists(this.state.parts, nextState.parts)) {
+            return true;
+        }
+
+        let params = this.state.currentRoute;
+        let nextParams = nextState.currentRoute;
+        if (!params || !nextParams) return true;
+
+        let keys = Object.keys(params);
+        let nextKeys = Object.keys(nextParams);
+
+        if (keys.length !== nextKeys.length) return true;
+
+        return compare(keys, params, nextParams);
     }
 
     render() {
         let {component, children} = this.props;
 
-        if(!this.props.location) return React.createElement(component);
+        if (!this.props.location) return React.createElement(component);
 
         let style = Object.assign({}, this.props.style);
 
-        if(!this.props.visible) style.display = "none";
+        if (!this.props.visible) style.display = "none";
 
         return React.createElement(component, {style: style}, children);
     }
