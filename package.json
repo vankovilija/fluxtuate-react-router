@@ -3,7 +3,7 @@
   "logo": {
     "file": "./logo.png"
   },
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "a javascript ES7 library for handling complex data transactions",
   "main": "lib/index.js",
   "scripts": {
@@ -61,8 +61,8 @@
     "babel-polyfill": "6.9.1",
     "bluebird": "3.4.1",
     "core-decorators": "0.12.3",
-    "fluxtuate": "^0.0.90",
-    "fluxtuate-router": "^0.0.53",
+    "fluxtuate": "^0.0.91",
+    "fluxtuate-router": "^0.0.54",
     "lodash": "^4.13.1",
     "react": "^15.3.2"
   },
