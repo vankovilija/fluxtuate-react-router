@@ -79,6 +79,8 @@ export default class Route extends Component {
         this.setState({
             parts
         });
+
+        part.setParams(this.props.location.currentRoute.params);
     }
 
     addMatch(match) {
@@ -180,8 +182,14 @@ export default class Route extends Component {
 
             this.location = newProps.location;
 
+            let currentRoute = newProps.location.currentRoute;
+
             this.setState({
-                currentRoute: newProps.location.currentRoute
+                currentRoute: currentRoute
+            });
+
+            this.state.parts.forEach((part)=> {
+                part.setParams(currentRoute.params);
             });
         }
     }
@@ -248,6 +256,9 @@ export default class Route extends Component {
         if (location && (currentRoute = location.currentRoute)) {
             this.updateMatches(matches, misses, currentRoute);
             this.updateProviders(providers, location.partName, currentRoute);
+            this.state.parts.forEach((part)=> {
+                part.setParams(currentRoute.params);
+            });
         }
     }
 
