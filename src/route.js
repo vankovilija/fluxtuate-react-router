@@ -71,6 +71,8 @@ export default class Route extends Component {
         this.setState({
             providers
         });
+        let {location} = this.props;
+        locationProvider.setLocation(location.partName, location.currentRoute);
     }
 
     addPart(part) {
@@ -89,6 +91,11 @@ export default class Route extends Component {
         this.setState({
             matches
         });
+
+        if(this.updateMatch(match, this.props.location.currentRoute)){
+            this.hasMatch = true;
+            this.updateMisses(this.state.misses);
+        }
     }
 
     addMiss(miss) {
@@ -96,7 +103,9 @@ export default class Route extends Component {
         misses.push(miss);
         this.setState({
             misses
-        })
+        });
+
+        this.hasMatch !== undefined && this.hasMatch ? miss.hide() : miss.show();
     }
 
     removeLocationProvider(locationProvider) {
@@ -148,9 +157,6 @@ export default class Route extends Component {
         this.setState({
             currentRoute
         });
-        this.state.parts.forEach((part)=> {
-            part.setParams(currentRoute.params);
-        });
     }
 
     componentWillMount() {
@@ -188,9 +194,7 @@ export default class Route extends Component {
                 currentRoute: currentRoute
             });
 
-            this.state.parts.forEach((part)=> {
-                part.setParams(currentRoute.params);
-            });
+            this.updateParts(this.state.parts, currentRoute);
         }
     }
 
@@ -217,15 +221,25 @@ export default class Route extends Component {
     }
 
     updateMatches(matches, misses, currentRoute) {
-        let hasMatch = false;
+        this.hasMatch = false;
         matches.forEach((match)=> {
             if (this.updateMatch(match, currentRoute)) {
-                hasMatch = true;
+                this.hasMatch = true;
             }
         });
 
+        this.updateMisses(misses)
+    }
+
+    updateMisses(misses) {
         misses.forEach((miss)=> {
-            hasMatch ? miss.hide() : miss.show();
+            this.hasMatch ? miss.hide() : miss.show();
+        });
+    }
+
+    updateParts(parts, currentRoute) {
+        parts.forEach((part)=> {
+            part.setParams(currentRoute.params);
         });
     }
 
@@ -250,15 +264,13 @@ export default class Route extends Component {
     }
 
     componentDidUpdate() {
-        let {matches, misses, providers} = this.state;
+        let {matches, misses, providers, parts} = this.state;
         let {location} = this.props;
         let currentRoute;
         if (location && (currentRoute = location.currentRoute)) {
             this.updateMatches(matches, misses, currentRoute);
             this.updateProviders(providers, location.partName, currentRoute);
-            this.state.parts.forEach((part)=> {
-                part.setParams(currentRoute.params);
-            });
+            this.updateParts(parts, currentRoute);
         }
     }
 
@@ -281,7 +293,7 @@ export default class Route extends Component {
         }
 
         let params = this.state.currentRoute;
-        let nextParams = nextState.currentRoute;
+        let nextParams = nextProps.location.currentRoute;
         if (!params || !nextParams) return true;
 
         let keys = Object.keys(params);

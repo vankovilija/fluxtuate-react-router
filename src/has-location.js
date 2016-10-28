@@ -21,9 +21,9 @@ export default (Comp) => {
             route.removeLocationProvider(this);
         }
 
-        setLocation(locationName, locationParams) {
+        setLocation(locationName, locationProps) {
             this.setState({
-                location: {locationName, params: locationParams}
+                location: {locationName, props: locationProps}
             });
         }
 
