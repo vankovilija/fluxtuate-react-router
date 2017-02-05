@@ -171,7 +171,7 @@ export default class Route extends Component {
 
     componentWillReceiveProps(newProps) {
         if (this.location !== newProps.location) {
-            if (this.context.fluxtuateContext && this.location) {
+            if (this.context.fluxtuateContext && this.location && this.location.startingContext.isChildOf(this.context.fluxtuateContext)) {
                 this.context.fluxtuateContext.removeChild(this.location.startingContext);
             }
             if (this.routeListener) {
@@ -179,22 +179,30 @@ export default class Route extends Component {
                 this.routeListener = null;
             }
 
-            if (this.context.fluxtuateContext) {
-                newProps.location.endingContext.start();
-                this.context.fluxtuateContext.addChild(newProps.location.startingContext);
+            if(newProps.location) {
+                if (this.context.fluxtuateContext) {
+                    newProps.location.endingContext.start();
+                    this.context.fluxtuateContext.addChild(newProps.location.startingContext);
+                }
+
+                this.routeListener = newProps.location.addListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
+
+                let currentRoute = newProps.location.currentRoute;
+
+                this.setState({
+                    currentRoute: currentRoute
+                });
+
+                this.updateParts(this.state.parts, currentRoute);
+            }else{
+                this.setState({
+                    currentRoute: undefined
+                });
+
+                this.updateParts(this.state.parts, undefined);
             }
 
-            this.routeListener = newProps.location.addListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
-
             this.location = newProps.location;
-
-            let currentRoute = newProps.location.currentRoute;
-
-            this.setState({
-                currentRoute: currentRoute
-            });
-
-            this.updateParts(this.state.parts, currentRoute);
         }
     }
 
@@ -239,7 +247,7 @@ export default class Route extends Component {
 
     updateParts(parts, currentRoute) {
         parts.forEach((part)=> {
-            part.setParams(currentRoute.params);
+            part.setParams(currentRoute ? currentRoute.params : {});
         });
     }
 
@@ -293,7 +301,7 @@ export default class Route extends Component {
         }
 
         let params = this.state.currentRoute;
-        let nextParams = nextProps.location.currentRoute;
+        let nextParams = nextProps.location ? nextProps.location.currentRoute : undefined;
         if (!params || !nextParams) return true;
 
         let keys = Object.keys(params);

@@ -9,6 +9,17 @@ export default class RoutePart extends Match {
 
     static contextTypes = Match.contextTypes;
 
+    componentWillReceiveProps(newProps, nextContext) {
+        let locationParams;
+        if(nextContext.route && nextContext.route.props && nextContext.route.props.location) {
+            locationParams = nextContext.route.props.location.currentRoute.params;
+        }else if(this.state && this.state.params){
+            locationParams = this.state.params;
+        }
+
+        this.setParams(locationParams, newProps);
+    }
+
     throwParentError() {
         throw new Error("Parts must be placed inside a route object!");
     }
@@ -21,10 +32,14 @@ export default class RoutePart extends Match {
         route.removePart(this);
     }
 
-    setParams(params) {
-        let {partName} = this.props;
+    setParams(params, props) {
+        if(!props) {
+            props = this.props;
+        }
+        let {partName} = props;
         this.setState({
-            location: params[partName]
+            location: params[partName],
+            params
         });
     }
 
