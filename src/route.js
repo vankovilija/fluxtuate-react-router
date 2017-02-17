@@ -181,8 +181,8 @@ export default class Route extends Component {
 
             if(newProps.location) {
                 if (this.context.fluxtuateContext) {
-                    newProps.location.endingContext.start();
                     this.context.fluxtuateContext.addChild(newProps.location.startingContext);
+                    newProps.location.endingContext.start();
                 }
 
                 this.routeListener = newProps.location.addListener(RouterEvents.ROUTE_CHANGED, this.updateRoute);
