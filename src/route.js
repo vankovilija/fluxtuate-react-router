@@ -1,4 +1,5 @@
-import React, {Component, PropTypes} from "react"
+import React, {Component} from "react"
+import PropTypes from "prop-types"
 import {Context} from "fluxtuate"
 import {RouterEvents} from "fluxtuate-router"
 import RoutePart from "fluxtuate-router/lib/route-part"
