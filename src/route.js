@@ -155,6 +155,7 @@ export default class Route extends Component {
 
     updateRoute() {
         let currentRoute = this.props.location.currentRoute;
+        this.updateParts(this.state.parts, currentRoute);
         this.setState({
             currentRoute
         });
@@ -181,7 +182,11 @@ export default class Route extends Component {
             }
 
             if(newProps.location) {
-                if (this.context.fluxtuateContext) {
+                if (this.context.fluxtuateContext && newProps.location.startingContext.parent !== this.context.fluxtuateContext) {
+                    if(newProps.location.startingContext.parent) {
+                        newProps.location.startingContext.parent.removeChild(newProps.location.startingContext);
+                    }
+
                     this.context.fluxtuateContext.addChild(newProps.location.startingContext);
                     newProps.location.endingContext.start();
                 }
