@@ -5,15 +5,19 @@ import {RouterEvents} from "fluxtuate-router"
 import RoutePart from "fluxtuate-router/lib/route-part"
 import {autobind} from "core-decorators"
 import utils from "./utils"
-
-import {isString, isNumber} from "lodash/lang"
+import {isString, isObject, isNumber} from "lodash/lang"
 
 function compare(keys, params, nextParams) {
     return keys.reduce((shouldUpdate, currentKey)=> {
         if (shouldUpdate) return true;
         let param = params[currentKey];
-        if (currentKey === "params") {
-            return compare(Object.keys(param), param, nextParams[currentKey]);
+        if (currentKey !== "context" && !isString(param) && !isNumber(param) && isObject(param)) {
+            let k1 = Object.keys(param);
+            let k2 = Object.keys(nextParams[currentKey]);
+            if(k1.length !== k2.length) {
+                return true;
+            }
+            return compare(k1, param, nextParams[currentKey]);
         }
         if (!isString(param) && !isNumber(param)) return shouldUpdate;
         shouldUpdate = param !== nextParams[currentKey];
@@ -27,7 +31,7 @@ function comapreLists(list1, list2) {
     return list1.reduce((shouldUpdate, listItem, i)=>{
         if(shouldUpdate) return true;
 
-        return listItem != list2[i];
+        return listItem !== list2[i];
     }, false);
 }
 
@@ -302,7 +306,9 @@ export default class Route extends Component {
         if(comapreLists(this.state.matches, nextState.matches) ||
             comapreLists(this.state.misses, nextState.misses) ||
             comapreLists(this.state.providers, nextState.providers) ||
-            comapreLists(this.state.parts, nextState.parts)) {
+            comapreLists(this.state.parts, nextState.parts) ||
+            this.compareChildren(React.Children.toArray(nextProps.children))
+        ) {
             return true;
         }
 
@@ -316,6 +322,23 @@ export default class Route extends Component {
         if (keys.length !== nextKeys.length) return true;
 
         return compare(keys, params, nextParams);
+    }
+
+    compareChildren(newChildren) {
+        let currentChildren = React.Children.toArray(this.props.children);
+        if(newChildren.length !== currentChildren.length) return true;
+        for(let i = 0; i < newChildren.length; i++) {
+            let oldKeys = Object.keys(currentChildren[i].props);
+            let newKeys = Object.keys(newChildren[i].props);
+
+            if(oldKeys.length !== newKeys.length) return true;
+
+            if(compare(newKeys, newChildren[i].props, currentChildren[i].props)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     render() {
