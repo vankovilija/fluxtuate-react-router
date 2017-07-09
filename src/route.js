@@ -5,21 +5,25 @@ import {RouterEvents} from "fluxtuate-router"
 import RoutePart from "fluxtuate-router/lib/route-part"
 import {autobind} from "core-decorators"
 import utils from "./utils"
-import {isString, isObject, isNumber} from "lodash/lang"
+import {isString, isObject, isBoolean, isNumber, isDate} from "lodash/lang"
 
-function compare(keys, params, nextParams) {
+function compare(keys, params, nextParams, totalCompare = []) {
+    totalCompare.push(params);
     return keys.reduce((shouldUpdate, currentKey)=> {
         if (shouldUpdate) return true;
         let param = params[currentKey];
-        if (currentKey !== "context" && !isString(param) && !isNumber(param) && isObject(param)) {
+        if(totalCompare.indexOf(param) !== -1) {
+            return shouldUpdate;
+        }
+        if (currentKey !== "context" && !isString(param) && !isNumber(param) && !isBoolean(param) && !isDate(param) && isObject(param)) {
             let k1 = Object.keys(param);
             let k2 = Object.keys(nextParams[currentKey]);
             if(k1.length !== k2.length) {
                 return true;
             }
-            return compare(k1, param, nextParams[currentKey]);
+            return compare(k1, param, nextParams[currentKey], totalCompare);
         }
-        if (!isString(param) && !isNumber(param)) return shouldUpdate;
+        if (!isString(param) && !isNumber(param) && !isBoolean(param) && !isDate(param)) return shouldUpdate;
         shouldUpdate = param !== nextParams[currentKey];
         return shouldUpdate;
     }, false);
