@@ -5,26 +5,28 @@ import {RouterEvents} from "fluxtuate-router"
 import RoutePart from "fluxtuate-router/lib/route-part"
 import {autobind} from "core-decorators"
 import utils from "./utils"
-import {isString, isObject, isBoolean, isNumber, isDate} from "lodash/lang"
+import {isString, isNaN, isObject, isBoolean, isNumber, isDate} from "lodash/lang"
 
-function compare(keys, params, nextParams, totalCompare = []) {
+function compare(keys, params, nextParams, maxDepth = 3, totalCompare = [], depth = 0) {
     totalCompare.push(params);
     return keys.reduce((shouldUpdate, currentKey)=> {
         if (shouldUpdate) return true;
         let param = params[currentKey];
-        if(totalCompare.indexOf(param) !== -1) {
+        if(totalCompare.indexOf(param) !== -1 || currentKey.indexOf("_react") !== -1) {
             return shouldUpdate;
         }
         if (currentKey !== "context" && !isString(param) && !isNumber(param) && !isBoolean(param) && !isDate(param) && isObject(param)) {
+            if(maxDepth < depth) return shouldUpdate;
+
             let k1 = Object.keys(param);
             let k2 = Object.keys(nextParams[currentKey]);
             if(k1.length !== k2.length) {
                 return true;
             }
-            return compare(k1, param, nextParams[currentKey], totalCompare);
+            return compare(k1, param, nextParams[currentKey], maxDepth, totalCompare, depth + 1);
         }
         if (!isString(param) && !isNumber(param) && !isBoolean(param) && !isDate(param)) return shouldUpdate;
-        shouldUpdate = param !== nextParams[currentKey];
+        shouldUpdate = !(isNaN(param) && isNaN(nextParams[currentKey])) && param !== nextParams[currentKey];
         return shouldUpdate;
     }, false);
 }
